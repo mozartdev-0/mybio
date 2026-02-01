@@ -1,3 +1,4 @@
+export const revalidate = 0; // Isso desativa o cache e força o banco a ser consultado em todo refresh
 import { neon } from '@neondatabase/serverless';
 
 export default async function Page({ params }) {
