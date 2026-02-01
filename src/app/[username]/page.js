@@ -1,20 +1,36 @@
-export default function UserProfile({ params }) {
-  // O Next.js pega automaticamente o nome que vem depois da barra
+import { neon } from '@neondatabase/serverless';
+
+export default async function Page({ params }) {
   const { username } = params;
+  
+  // Conecta ao Neon usando a variável que já está no seu .env
+  const sql = neon(process.env.DATABASE_URL);
+  
+  // Busca o perfil no banco
+  const rows = await sql`SELECT * FROM perfis WHERE username = ${username}`;
+  const user = rows[0];
+
+  if (!user) {
+    return <div className="text-white text-center mt-20">Usuário não encontrado :(</div>;
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
       <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20 shadow-xl max-w-sm w-full text-center">
-        <h1 className="text-3xl font-bold mb-2">@{username}</h1>
-        <p className="text-gray-400 mb-6">Desenvolvedor e entusiasta tech</p>
+        <h1 className="text-3xl font-bold mb-2">{user.nome}</h1>
+        <p className="text-gray-400 mb-6">{user.bio}</p>
         
         <div className="space-y-4">
-          <a href="#" className="block w-full py-3 bg-white text-black rounded-lg font-semibold hover:bg-gray-200 transition">
-            Meu GitHub
-          </a>
-          <a href="#" className="block w-full py-3 border border-white/30 rounded-lg hover:bg-white/5 transition">
-            Meu Portfólio
-          </a>
+          {user.links.map((link, index) => (
+            <a 
+              key={index}
+              href={link.url} 
+              target="_blank"
+              className="block w-full py-3 bg-white text-black rounded-lg font-semibold hover:scale-105 transition-transform"
+            >
+              {link.label}
+            </a>
+          ))}
         </div>
       </div>
     </div>
