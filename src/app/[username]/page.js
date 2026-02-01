@@ -1,13 +1,12 @@
-import { neon } from '@neondatabase/serverless';
-
-export const revalidate = 0;
-
 export default async function Page({ params }) {
-  // Garantir que pegamos o username corretamente
-  const { username } = params;
+  // O SEGREDO ESTÁ NESTA LINHA:
+  const resolvedParams = await params;
+  const username = resolvedParams.username;
   
-  // Teste de conexão: Se DATABASE_URL estiver vazia, vai exibir o erro
+  console.log("Agora o username é:", username); 
+
   const url = process.env.DATABASE_URL;
+  // ... resto do código
   
   if (!url) {
     return <div className="text-white p-10">Erro: DATABASE_URL não encontrada no servidor!</div>;
