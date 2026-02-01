@@ -1,39 +1,52 @@
-export const revalidate = 0; // Isso desativa o cache e força o banco a ser consultado em todo refresh
 import { neon } from '@neondatabase/serverless';
 
+export const revalidate = 0;
+
 export default async function Page({ params }) {
+  // Garantir que pegamos o username corretamente
   const { username } = params;
   
-  // Conecta ao Neon usando a variável que já está no seu .env
-  const sql = neon(process.env.DATABASE_URL);
+  // Teste de conexão: Se DATABASE_URL estiver vazia, vai exibir o erro
+  const url = process.env.DATABASE_URL;
   
-  // Busca o perfil no banco
-  const rows = await sql`SELECT * FROM perfis WHERE username = ${username}`;
-  const user = rows[0];
-
-  if (!user) {
-    return <div className="text-white text-center mt-20">Usuário não encontrado :(</div>;
+  if (!url) {
+    return <div className="text-white p-10">Erro: DATABASE_URL não encontrada no servidor!</div>;
   }
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
-      <div className="bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20 shadow-xl max-w-sm w-full text-center">
-        <h1 className="text-3xl font-bold mb-2">{user.nome}</h1>
-        <p className="text-gray-400 mb-6">{user.bio}</p>
-        
-        <div className="space-y-4">
-          {user.links.map((link, index) => (
-            <a 
-              key={index}
-              href={link.url} 
-              target="_blank"
-              className="block w-full py-3 bg-white text-black rounded-lg font-semibold hover:scale-105 transition-transform"
-            >
-              {link.label}
-            </a>
-          ))}
+  try {
+    const sql = neon(url);
+    
+    // Busca exata (usando LOWER para evitar erro de maiúsculas/minúsculas)
+    const rows = await sql`SELECT * FROM perfis WHERE LOWER(username) = LOWER(${username})`;
+    
+    if (rows.length === 0) {
+      return (
+        <div className="text-white p-10 font-mono">
+          <h1 className="text-red-500">Usuário "{username}" não encontrado.</h1>
+          <p className="mt-4 text-gray-400">Dica: No seu Neon, o username está exatamente como "{username}"?</p>
+          <p className="mt-2 text-xs opacity-30 text-white">DB_URL detectada: {url.substring(0, 20)}...</p>
+        </div>
+      );
+    }
+
+    const user = rows[0];
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
+        <div className="bg-white/10 backdrop-blur-lg p-8 rounded-3xl border border-white/20 max-w-sm w-full text-center">
+          <h1 className="text-3xl font-bold">{user.nome}</h1>
+          <p className="text-gray-400 mt-2">{user.bio}</p>
+          <div className="mt-6 space-y-4">
+            {user.links && user.links.map((link, i) => (
+              <a key={i} href={link.url} className="block w-full py-3 bg-white text-black rounded-xl font-bold">
+                {link.label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  } catch (e) {
+    return <div className="text-white p-10">Erro no banco: {e.message}</div>;
+  }
 }
