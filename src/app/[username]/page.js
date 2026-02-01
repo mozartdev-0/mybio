@@ -1,29 +1,22 @@
+import { neon } from '@neondatabase/serverless';
+
+export const revalidate = 0;
+
 export default async function Page({ params }) {
-  // O SEGREDO ESTÁ NESTA LINHA:
+  // Resolve os params (Obrigatório no Next.js 15+)
   const resolvedParams = await params;
   const username = resolvedParams.username;
   
-  console.log("Agora o username é:", username); 
-
   const url = process.env.DATABASE_URL;
-  // ... resto do código
-  
-  if (!url) {
-    return <div className="text-white p-10">Erro: DATABASE_URL não encontrada no servidor!</div>;
-  }
 
   try {
     const sql = neon(url);
-    
-    // Busca exata (usando LOWER para evitar erro de maiúsculas/minúsculas)
     const rows = await sql`SELECT * FROM perfis WHERE LOWER(username) = LOWER(${username})`;
     
     if (rows.length === 0) {
       return (
-        <div className="text-white p-10 font-mono">
-          <h1 className="text-red-500">Usuário "{username}" não encontrado.</h1>
-          <p className="mt-4 text-gray-400">Dica: No seu Neon, o username está exatamente como "{username}"?</p>
-          <p className="mt-2 text-xs opacity-30 text-white">DB_URL detectada: {url.substring(0, 20)}...</p>
+        <div className="flex items-center justify-center min-h-screen bg-black text-white p-4">
+          <p className="opacity-50 font-mono">Usuário "{username}" não encontrado :(</p>
         </div>
       );
     }
@@ -31,21 +24,38 @@ export default async function Page({ params }) {
     const user = rows[0];
 
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
-        <div className="bg-white/10 backdrop-blur-lg p-8 rounded-3xl border border-white/20 max-w-sm w-full text-center">
-          <h1 className="text-3xl font-bold">{user.nome}</h1>
-          <p className="text-gray-400 mt-2">{user.bio}</p>
-          <div className="mt-6 space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4 font-sans">
+        {/* Card Estiloso */}
+        <div className="bg-white/10 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/20 shadow-2xl max-w-sm w-full text-center">
+          <div className="mb-6">
+             <h1 className="text-3xl font-extrabold tracking-tight">{user.nome}</h1>
+             <p className="text-gray-400 mt-2 text-sm">{user.bio}</p>
+          </div>
+          
+          <div className="space-y-3">
             {user.links && user.links.map((link, i) => (
-              <a key={i} href={link.url} className="block w-full py-3 bg-white text-black rounded-xl font-bold">
+              <a 
+                key={i} 
+                href={link.url} 
+                target="_blank" 
+                className="block w-full py-4 bg-white text-black rounded-2xl font-bold hover:scale-[1.03] transition-transform active:scale-95"
+              >
                 {link.label}
               </a>
             ))}
           </div>
+
+          <p className="mt-8 text-[10px] uppercase tracking-widest opacity-30">
+            Powered by Vynex
+          </p>
         </div>
       </div>
     );
   } catch (e) {
-    return <div className="text-white p-10">Erro no banco: {e.message}</div>;
+    return (
+      <div className="text-white p-10 font-mono text-xs">
+        Erro crítico: {e.message}
+      </div>
+    );
   }
 }
